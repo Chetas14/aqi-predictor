@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirSense Pro | AI AQI Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: white;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-animation span {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: floatBg 15s linear infinite;
+        }
+
+        @keyframes floatBg {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            100% { transform: translateY(-100vh) scale(1); opacity: 1; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 15px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 30px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+        }
+
+        /* Input Groups */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            font-size: 16px;
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #a8edea;
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Row for two inputs */
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        /* Sample Buttons */
+        .sample-section {
+            margin: 20px 0;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .sample-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .sample-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .sample-btn:hover {
+            background: rgba(168, 237, 234, 0.3);
+            transform: scale(1.02);
+        }
+
+        /* Predict Button */
+        .predict-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #1a1a2e;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .predict-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(168, 237, 234, 0.4);
+        }
+
+        /* Result Display */
+        .result-placeholder {
+            text-align: center;
+            padding: 50px 20px;
+        }
+
+        .result-placeholder i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+
+        .result-content {
+            text-align: center;
+        }
+
+        .aqi-ring {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+        }
+
+        .aqi-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        .message-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .rec-list {
+            list-style: none;
+            text-align: left;
+            margin-top: 15px;
+        }
+
+        .rec-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .contribution-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .contribution-bar {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .contribution-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #a8edea, #fed6e3);
+            border-radius: 10px;
+            transition: width 0.5s;
+        }
+
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #1a1a2e;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation" id="bgAnimation"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🌬️ AirSense Pro</h1>
+            <p>AI-Powered Air Quality Index Predictor | Real-time AQI Forecasting</p>
+        </div>
+
+        <div class="grid">
+            <!-- Input Card -->
+            <div class="card">
+                <h2>📊 Pollutant Levels</h2>
+                
+                <div class="input-group">
+                    <label>🌫️ PM2.5 (µg/m³)</label>
+                    <input type="number" id="pm25" step="any" placeholder="e.g., 120">
+                </div>
+
+                <div class="input-group">
+                    <label>💨 PM10 (µg/m³)</label>
+                    <input type="number" id="pm10" step="any" placeholder="e.g., 180">
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>🏭 NO₂ (µg/m³)</label>
+                        <input type="number" id="no2" step="any" placeholder="45">
+                    </div>
+                    <div class="input-group">
+                        <label>🏭 SO₂ (µg/m³)</label>
+                        <input type="number" id="so2" step="any" placeholder="25">
+                    </div>
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>🚗 CO (mg/m³)</label>
+                        <input type="number" id="co" step="any" placeholder="1.5">
+                    </div>
+                    <div class="input-group">
+                        <label>☀️ O₃ (µg/m³)</label>
+                        <input type="number" id="o3" step="any" placeholder="60">
+                    </div>
+                </div>
+
+                <div class="sample-section">
+                    <small>📝 Try sample data:</small>
+                    <div class="sample-buttons">
+                        <button class="sample-btn" data-sample="good">🌿 Good</button>
+                        <button class="sample-btn" data-sample="moderate">⚠️ Moderate</button>
+                        <button class="sample-btn" data-sample="poor">🔴 Poor</button>
+                        <button class="sample-btn" data-sample="severe">🚨 Severe</button>
+                    </div>
+                </div>
+
+                <button class="predict-btn" id="predictBtn">✨ Predict AQI ✨</button>
+            </div>
+
+            <!-- Result Card -->
+            <div class="card">
+                <h2>📈 Prediction Result</h2>
+                <div id="resultPlaceholder" class="result-placeholder">
+                    <i class="fas fa-chart-line"></i>
+                    <p>Enter values and click "Predict AQI"</p>
+                    <small>Powered by Machine Learning</small>
+                </div>
+                <div id="resultContent" style="display: none;">
+                    <div class="aqi-ring">
+                        <canvas id="aqiCanvas" width="200" height="200"></canvas>
+                        <div class="aqi-value" id="aqiValue">0</div>
+                    </div>
+                    <div>
+                        <span class="category-badge" id="categoryBadge">--</span>
+                    </div>
+                    <div class="message-box" id="messageBox"></div>
+                    <div>
+                        <strong>📋 Recommendations</strong>
+                        <ul class="rec-list" id="recList"></ul>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <strong>📊 Pollutant Impact</strong>
+                        <div id="contributions"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Font Awesome CDN for icons
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+        document.head.appendChild(link);
+
+        // Background particles
+        function createParticles() {
+            const container = document.getElementById('bgAnimation');
+            for (let i = 0; i < 80; i++) {
+                const span = document.createElement('span');
+                const size = Math.random() * 6 + 2;
+                span.style.width = size + 'px';
+                span.style.height = size + 'px';
+                span.style.left = Math.random() * 100 + '%';
+                span.style.animationDuration = Math.random() * 20 + 10 + 's';
+                span.style.animationDelay = Math.random() * 10 + 's';
+                container.appendChild(span);
+            }
+        }
+        createParticles();
+
+        // Sample data
+        const samples = {
+            good: { pm25: 35, pm10: 50, no2: 25, so2: 15, co: 0.8, o3: 45 },
+            moderate: { pm25: 85, pm10: 120, no2: 55, so2: 35, co: 2.5, o3: 70 },
+            poor: { pm25: 180, pm10: 250, no2: 100, so2: 70, co: 5.0, o3: 110 },
+            severe: { pm25: 320, pm10: 450, no2: 160, so2: 120, co: 9.0, o3: 160 }
+        };
+
+        // Sample buttons
+        document.querySelectorAll('.sample-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.dataset.sample;
+                const data = samples[type];
+                if (data) {
+                    document.getElementById('pm25').value = data.pm25;
+                    document.getElementById('pm10').value = data.pm10;
+                    document.getElementById('no2').value = data.no2;
+                    document.getElementById('so2').value = data.so2;
+                    document.getElementById('co').value = data.co;
+                    document.getElementById('o3').value = data.o3;
+                }
+            });
+        });
+
+        // Predict button
+        const predictBtn = document.getElementById('predictBtn');
+        predictBtn.addEventListener('click', async () => {
+            const btn = predictBtn;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Predicting... <span class="loading"></span>';
+            btn.disabled = true;
+
+            const data = {
+                pm25: parseFloat(document.getElementById('pm25').value) || 0,
+                pm10: parseFloat(document.getElementById('pm10').value) || 0,
+                no2: parseFloat(document.getElementById('no2').value) || 0,
+                so2: parseFloat(document.getElementById('so2').value) || 0,
+                co: parseFloat(document.getElementById('co').value) || 0,
+                o3: parseFloat(document.getElementById('o3').value) || 0
+            };
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('resultPlaceholder').style.display = 'none';
+                    document.getElementById('resultContent').style.display = 'block';
+
+                    document.getElementById('aqiValue').innerText = Math.round(result.aqi);
+                    const badge = document.getElementById('categoryBadge');
+                    badge.innerText = result.category;
+                    badge.style.backgroundColor = result.color + '40';
+                    badge.style.color = result.color;
+                    
+                    document.getElementById('messageBox').innerHTML = `<i class="fas fa-info-circle"></i> ${result.message}`;
+                    
+                    const recList = document.getElementById('recList');
+                    recList.innerHTML = '';
+                    result.recommendations.forEach(rec => {
+                        const li = document.createElement('li');
+                        li.innerHTML = rec;
+                        recList.appendChild(li);
+                    });
+
+                    // Update contributions
+                    const contribDiv = document.getElementById('contributions');
+                    contribDiv.innerHTML = '';
+                    for (const [poll, val] of Object.entries(result.contributions)) {
+                        const absVal = Math.abs(val);
+                        const maxContrib = 10000; // normalize
+                        const percent = Math.min((absVal / maxContrib) * 100, 100);
+                        const item = document.createElement('div');
+                        item.className = 'contribution-item';
+                        item.innerHTML = `
+                            <span style="width: 45px;">${poll}</span>
+                            <div class="contribution-bar"><div class="contribution-fill" style="width: ${percent}%"></div></div>
+                            <span>${val.toFixed(1)}</span>
+                        `;
+                        contribDiv.appendChild(item);
+                    }
+
+                    // Draw gauge
+                    drawGauge(result.aqi, result.color);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        function drawGauge(aqi, color) {
+            const canvas = document.getElementById('aqiCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            const percent = Math.min(aqi / 500, 1);
+            const angle = percent * Math.PI;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            // Background arc
+            ctx.beginPath();
+            ctx.arc(w/2, h/2, 80, -Math.PI/2, Math.PI/2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 15;
+            ctx.stroke();
+            
+            // Foreground arc
+            ctx.beginPath();
+            ctx.arc(w/2, h/2, 80, -Math.PI/2, -Math.PI/2 + angle);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 15;
+            ctx.stroke();
+            
+            // Dot at end
+            const endX = w/2 + 80 * Math.cos(-Math.PI/2 + angle);
+            const endY = h/2 + 80 * Math.sin(-Math.PI/2 + angle);
+            ctx.beginPath();
+            ctx.arc(endX, endY, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+    </script>
+</body>
+</html> 
